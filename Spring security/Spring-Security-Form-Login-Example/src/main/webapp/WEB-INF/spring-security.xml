@@ -3,21 +3,55 @@
 	xsi:schemaLocation="http://www.springframework.org/schema/beans
 	http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
 	http://www.springframework.org/schema/security
-	http://www.springframework.org/schema/security/spring-security-3.0.3.xsd">
+	http://www.springframework.org/schema/security/spring-security-3.2.xsd">
 
-	<http auto-config="true">
-		<intercept-url pattern="/welcome*" access="ROLE_USER" />
-		<form-login login-page="/login" default-target-url="/welcome"
-			authentication-failure-url="/loginfailed" />
-		<logout logout-success-url="/logout" />
+	
+	<!-- enable use-expressions -->
+	<http  use-expressions="true"  entry-point-ref="restServicesEntryPoint">
+		<custom-filter before="FORM_LOGIN_FILTER" ref="restServicesFilter"/> 
+		
+		<intercept-url pattern="/admin**" access="hasRole('ROLE_ADMIN')" />
+
+		<!-- access denied page -->
+		<access-denied-handler error-page="/403" />
+		<form-login 
+		    login-page="/login" 
+		   
+		   
+			authentication-failure-url="/login?error" 
+			username-parameter="username"
+			password-parameter="password"
+			authentication-success-handler-ref="myAuthenticationSuccessHandler"
+			authentication-failure-handler-ref="myAuthenticationFailureHandler"
+			 />
+		<logout logout-success-url="/login?logout" />
+		<!-- enable csrf protection -->
+		
 	</http>
+	
+<beans:bean id="myAuthenticationFailureHandler" class="com.mkyong.security.MyAuthenticationFailureHandler"></beans:bean>
 
-	<authentication-manager>
-		<authentication-provider>
-			<user-service>
-				<user name="mkyong" password="123456" authorities="ROLE_USER" />
-			</user-service>
+ <beans:bean id="mytokenUtils" class="com.mkyong.security.MyTokenUtils"  ></beans:bean>
+
+ <beans:bean id="jwtUtil" class="com.mkyong.utils.JwtUtil"  ></beans:bean>
+
+<beans:bean id="myAuthenticationSuccessHandler" class="com.mkyong.security.MyAuthenticationSuccessHandler">
+
+ 
+</beans:bean>
+
+	<authentication-manager alias="authenticationManager">
+		<authentication-provider user-service-ref="myUserDetailsService" >
+			<password-encoder hash="bcrypt" />    
 		</authentication-provider>
 	</authentication-manager>
+
+ <beans:bean id="restServicesFilter" class="com.mkyong.security.RestUsernamePasswordAuthenticationFilter"> 
+ <beans:property name="authenticationManager" ref="authenticationManager" />
+ </beans:bean>
+
+
+<beans:bean id="restServicesEntryPoint" class="com.mkyong.security.RestServiceEntryPoint"></beans:bean>
+
 
 </beans:beans>
